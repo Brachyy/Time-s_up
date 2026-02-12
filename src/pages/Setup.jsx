@@ -433,7 +433,7 @@ const Setup = () => {
 
         {/* Start Button - Fixed Bottom */}
         {(!roomId || isHost) && (
-          <div className="pt-4 shrink-0 z-10 bg-slate-50">
+          <div className="pt-4 pb-6 shrink-0 z-10 bg-slate-50">
             <Button variant="primary" onClick={handleStart} className="w-full py-4 text-xl shadow-xl">
               {roomId ? 'Lancer la Partie 🚀' : 'Commencer'}
             </Button>

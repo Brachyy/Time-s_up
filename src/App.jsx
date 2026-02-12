@@ -12,7 +12,7 @@ const AppContent = () => {
   const { state, dispatch } = useGame();
 
   return (
-    <div className="h-screen w-screen bg-slate-900 overflow-hidden">
+    <div className="h-[100dvh] w-full bg-slate-900 overflow-hidden">
       {state.gameState === 'HOME' && <Home />}
       {state.gameState === 'SETUP' && <Setup />}
       {state.gameState === 'PLAYING' && <Game />}
