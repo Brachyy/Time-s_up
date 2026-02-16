@@ -29,7 +29,7 @@ const Results = () => {
   const topPlayers = allPlayers.sort((a, b) => b.score - a.score);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-yellow-50 p-4 overflow-hidden relative">
+    <div className="flex flex-col items-center justify-center h-[100dvh] w-full bg-yellow-50 p-4 overflow-hidden relative">
       {/* Confetti Background (Simulated with dots) */}
       {[...Array(20)].map((_, i) => (
         <motion.div
@@ -105,7 +105,7 @@ const Results = () => {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="shrink-0 pt-4 border-t-2 border-slate-50"
+          className="shrink-0 pt-4 pb-4 border-t-2 border-slate-50"
         >
           <Button 
             variant="primary"

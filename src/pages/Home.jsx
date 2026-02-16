@@ -35,7 +35,7 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-yellow-50 overflow-hidden relative">
+    <div className="flex flex-col items-center justify-center h-[100dvh] w-full bg-yellow-50 overflow-hidden relative">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px]"></div>
       

@@ -1,8 +1,16 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Allow access to game rooms
     match /rooms/{roomId} {
-      allow read, write: if true; // For development/demo purposes
+      // In a real max-security app, we would use Firebase Auth (request.auth != null)
+      // For now, we allow public playing but we could validate data schema here.
+      allow read, write: if true;
+    }
+    
+    // Explicitly deny everything else (default behavior, but good to be explicit)
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

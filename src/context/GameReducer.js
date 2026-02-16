@@ -78,7 +78,11 @@ export const gameReducer = (state, action) => {
         teams: nextRoundTeams
       };
     case 'END_TURN':
-      return { ...state, gameState: 'TURN_REVIEW' };
+      let updatedPlayedCards = state.playedCardsInTurn;
+      if (action.payload) {
+        updatedPlayedCards = [...updatedPlayedCards, { ...action.payload, status: 'timeout' }];
+      }
+      return { ...state, gameState: 'TURN_REVIEW', playedCardsInTurn: updatedPlayedCards };
 
     case 'VALIDATE_TURN':
       const invalidatedIds = action.payload || [];

@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD1tAXu5CyLRqTGABxpZr7Wq9oEVpFJXD0",
-  authDomain: "times-up-etud-2025.firebaseapp.com",
-  projectId: "times-up-etud-2025",
-  storageBucket: "times-up-etud-2025.firebasestorage.app",
-  messagingSenderId: "746604160214",
-  appId: "1:746604160214:web:564f3686ef59ea345e9577"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);

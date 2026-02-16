@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import Button from '../components/UI/Button';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,6 +7,19 @@ import clsx from 'clsx';
 const TurnReview = () => {
   const { state, dispatch } = useGame();
   const [invalidatedIds, setInvalidatedIds] = useState([]);
+  
+  const playedCards = state.playedCardsInTurn || [];
+
+  // Initialize invalidated cards (e.g. timeout cards)
+  useEffect(() => {
+    const timeoutIds = playedCards
+      .filter(card => card.status === 'timeout')
+      .map(card => card.id);
+    
+    if (timeoutIds.length > 0) {
+      setInvalidatedIds(prev => [...new Set([...prev, ...timeoutIds])]);
+    }
+  }, []); // Run once on mount
 
   const toggleCard = (id) => {
     setInvalidatedIds(prev => 
@@ -20,11 +33,10 @@ const TurnReview = () => {
     dispatch({ type: 'VALIDATE_TURN', payload: invalidatedIds });
   };
 
-  const playedCards = state.playedCardsInTurn || [];
   const validCount = playedCards.length - invalidatedIds.length;
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-900 overflow-hidden relative p-4">
+    <div className="flex flex-col h-[100dvh] w-full bg-slate-900 overflow-hidden relative p-4">
       <div className="flex-1 flex flex-col items-center justify-center max-w-lg mx-auto w-full">
         
         <motion.div 
@@ -45,6 +57,7 @@ const TurnReview = () => {
             ) : (
               playedCards.map((card) => {
                 const isValid = !invalidatedIds.includes(card.id);
+                const isTimeout = card.status === 'timeout';
                 return (
                   <motion.div
                     key={card.id}
@@ -59,12 +72,19 @@ const TurnReview = () => {
                         : "bg-red-50 border-red-200 opacity-75"
                     )}
                   >
-                    <span className={clsx(
-                      "text-lg font-black",
-                      isValid ? "text-slate-800" : "text-slate-400 line-through"
-                    )}>
-                      {card.word}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className={clsx(
+                        "text-lg font-black",
+                        isValid ? "text-slate-800" : "text-slate-400 line-through"
+                      )}>
+                        {card.word}
+                      </span>
+                      {isTimeout && (
+                        <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">
+                          Temps écoulé ⏳
+                        </span>
+                      )}
+                    </div>
                     <div className={clsx(
                       "w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-sm transition-colors",
                       isValid ? "bg-green-500" : "bg-red-500"
@@ -82,17 +102,18 @@ const TurnReview = () => {
             <span className="font-black text-3xl text-blue-600">+{validCount}</span>
           </div>
 
-          <Button 
-            variant="primary"
-            onClick={handleConfirm}
-            className="w-full py-4 text-xl"
-          >
-            Valider et Continuer
-          </Button>
+          <div className="pb-2">
+            <Button 
+              variant="primary"
+              onClick={handleConfirm}
+              className="w-full py-4 text-xl"
+            >
+              Valider et Continuer
+            </Button>
+          </div>
         </motion.div>
       </div>
     </div>
   );
 };
-
 export default TurnReview;

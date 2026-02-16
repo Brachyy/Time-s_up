@@ -13,6 +13,7 @@ const Game = () => {
   
   // Filter out guessed cards for the current round
   const availableCards = state.deck.filter(card => !card.guessed);
+  const currentCard = availableCards[activeCardIndex];
   
   const handleCorrect = () => {
     if (availableCards.length > 0) {
@@ -40,8 +41,8 @@ const Game = () => {
   };
 
   const handleTimeUp = React.useCallback(() => {
-    dispatch({ type: 'END_TURN' });
-  }, [dispatch]);
+    dispatch({ type: 'END_TURN', payload: currentCard });
+  }, [dispatch, currentCard]);
 
   if (availableCards.length === 0) {
     const allPlayers = [];
@@ -124,53 +125,60 @@ const Game = () => {
     );
   }
 
-  const currentCard = availableCards[activeCardIndex];
   const currentTeam = state.teams[state.currentTeam];
   const currentPlayer = currentTeam.members[currentTeam.currentPlayerIndex];
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-yellow-50 overflow-hidden relative">
+    <div className="flex flex-col items-center h-full w-full bg-yellow-50 overflow-hidden relative">
       {/* HUD */}
-      <div className="absolute top-4 left-4 bg-white px-4 py-2 rounded-xl border-2 border-slate-100 shadow-sm">
+      <div className="absolute top-4 left-4 bg-white px-4 py-2 rounded-xl border-2 border-slate-100 shadow-sm z-20">
         <h3 className={`text-xl font-bold ${state.currentTeam % 2 === 0 ? 'text-blue-500' : 'text-pink-500'}`}>{currentTeam.name}</h3>
       </div>
       
-      <div className="absolute top-4 right-4 bg-white px-4 py-2 rounded-xl border-2 border-slate-100 shadow-sm text-right">
+      <div className="absolute top-4 right-4 bg-white px-4 py-2 rounded-xl border-2 border-slate-100 shadow-sm text-right z-20">
         <h3 className="text-sm font-bold text-slate-400 uppercase">Joueur</h3>
         <p className="text-xl font-bold text-blue-500">{currentPlayer}</p>
       </div>
 
-      <div className="mb-8 text-center">
-        <h2 className="text-3xl font-black text-slate-800 mb-1">Manche {state.currentRound}</h2>
-        <p className="text-slate-500 font-bold bg-slate-200 px-4 py-1 rounded-full inline-block">
-          {state.currentRound === 1 ? 'Décrivez librement' : state.currentRound === 2 ? 'Un seul mot' : 'Mimez'}
-        </p>
+      <div className="flex-1 flex flex-col justify-center items-center w-full max-w-lg mt-4 px-4">
+        {/* Round Info */}
+        <div className="mb-4 text-center shrink-0">
+          <h2 className="text-3xl font-black text-slate-800 mb-1">Manche {state.currentRound}</h2>
+          <p className="text-slate-500 font-bold bg-slate-200 px-4 py-1 rounded-full inline-block">
+            {state.currentRound === 1 ? 'Décrivez librement' : state.currentRound === 2 ? 'Un seul mot' : 'Mimez'}
+          </p>
+        </div>
+
+        {/* Timer */}
+        <div className="mb-4 shrink-0">
+          <Timer duration={state.timer} onTimeUp={handleTimeUp} />
+        </div>
+
+        {/* Card Area - Increased height to match Card component (h-96) */}
+        <div className="relative w-full max-w-sm flex justify-center items-center h-96 z-10 shrink-0 mb-auto">
+          <AnimatePresence>
+            {currentCard && (
+              <motion.div
+                key={currentCard.id}
+                initial={{ scale: 0.8, opacity: 0, rotate: -10, x: 200 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0, x: 0 }}
+                exit={{ scale: 0.8, opacity: 0, rotate: 10, x: -200 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="absolute"
+              >
+                <Card 
+                  word={currentCard.word} 
+                  onSwipeRight={handleCorrect}
+                  onSwipeLeft={state.currentRound === 2 ? handlePass : handleTaboo}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      <Timer duration={state.timer} onTimeUp={handleTimeUp} />
-
-      <div className="relative w-full max-w-sm flex justify-center items-center h-96 z-10">
-        <AnimatePresence>
-          {currentCard && (
-            <motion.div
-              key={currentCard.id}
-              initial={{ scale: 0.8, opacity: 0, rotate: -10, x: 200 }}
-              animate={{ scale: 1, opacity: 1, rotate: 0, x: 0 }}
-              exit={{ scale: 0.8, opacity: 0, rotate: 10, x: -200 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className="absolute"
-            >
-              <Card 
-                word={currentCard.word} 
-                onSwipeRight={handleCorrect}
-                onSwipeLeft={state.currentRound === 2 ? handlePass : handleTaboo}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div className="absolute bottom-12 left-6 right-6 flex gap-4 z-20">
+      {/* Controls - Fixed at bottom via flex */}
+      <div className="w-full max-w-md px-4 pb-6 mt-4 flex gap-4 z-20 shrink-0">
         {state.currentRound === 2 ? (
           <Button 
             variant="clay-orange"
