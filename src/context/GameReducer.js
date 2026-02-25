@@ -87,6 +87,10 @@ export const gameReducer = (state, action) => {
     case 'VALIDATE_TURN':
       const invalidatedIds = action.payload || [];
       
+      // Determine which played cards are validated vs invalidated
+      const allPlayedIds = (state.playedCardsInTurn || []).map(c => c.id);
+      const validatedIds = allPlayedIds.filter(id => !invalidatedIds.includes(id));
+      
       const currentTeamIndex = state.currentTeam;
       const currentTeamVal = state.teams[currentTeamIndex];
       
@@ -108,9 +112,11 @@ export const gameReducer = (state, action) => {
         playerStats: newPlayerStats
       };
 
-      const revertDeck = state.deck.map(card => 
-        invalidatedIds.includes(card.id) ? { ...card, guessed: false } : card
-      );
+      const revertDeck = state.deck.map(card => {
+        if (validatedIds.includes(card.id)) return { ...card, guessed: true };
+        if (invalidatedIds.includes(card.id)) return { ...card, guessed: false };
+        return card;
+      });
 
       const team = newTeams[currentTeamIndex];
       const nextPlayerIndex = (team.currentPlayerIndex + 1) % (team.members.length || 1);
