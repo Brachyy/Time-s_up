@@ -82,6 +82,11 @@ const Setup = () => {
     { name: 'Équipe 2', members: ['Joueur 3', 'Joueur 4'] }
   ]);
 
+  // Random Team Generator State
+  const [teamCreationMode, setTeamCreationMode] = useState('manual'); // 'manual' or 'random'
+  const [randomPlayersText, setRandomPlayersText] = useState('');
+  const [randomTeamsCount, setRandomTeamsCount] = useState(2);
+
   // --- SYNC LOGIC (Online Only) ---
   useEffect(() => {
     if (roomId && onlineState?.settings) {
@@ -159,6 +164,33 @@ const Setup = () => {
     const newTeams = [...localTeams];
     newTeams[teamIndex].members = newTeams[teamIndex].members.filter((_, i) => i !== memberIndex);
     setLocalTeams(newTeams);
+  };
+
+  const handleGenerateRandomTeams = () => {
+    const players = randomPlayersText
+      .split(/[,\n;]+/)
+      .map(name => name.trim())
+      .filter(name => name.length > 0);
+
+    if (players.length < randomTeamsCount) {
+      alert(`Il faut au moins ${randomTeamsCount} joueurs pour former ${randomTeamsCount} équipes !`);
+      return;
+    }
+
+    const shuffledPlayers = [...players].sort(() => 0.5 - Math.random());
+
+    const newTeams = Array.from({ length: randomTeamsCount }, (_, i) => ({
+      name: `Équipe ${i + 1}`,
+      members: []
+    }));
+
+    shuffledPlayers.forEach((player, index) => {
+      const teamIndex = index % randomTeamsCount;
+      newTeams[teamIndex].members.push(player);
+    });
+
+    setLocalTeams(newTeams);
+    setTeamCreationMode('manual');
   };
 
   const handleStart = () => {
@@ -376,58 +408,148 @@ const Setup = () => {
           </div>
 
           {/* TEAMS SECTION - Dynamic Grid */}
-          <div className="flex flex-col gap-2 min-h-[300px]">
-             <div className="flex justify-between items-center px-2">
+          <div className="flex flex-col gap-4 min-h-[300px]">
+             <div className="flex flex-wrap justify-between items-center gap-2 px-2">
                 <h3 className="font-bold text-slate-400 uppercase">Équipes ({localTeams.length})</h3>
                 {!roomId && (
                   <div className="flex gap-2">
-                    {localTeams.length > 2 && (
-                      <button onClick={handleRemoveTeam} className="text-red-400 hover:text-red-600 font-bold text-sm px-2 py-1 bg-red-50 rounded-lg border border-red-100">
-                        - Retirer
-                      </button>
-                    )}
-                    <button onClick={handleAddTeam} className="text-blue-500 hover:text-blue-700 font-bold text-sm px-2 py-1 bg-blue-50 rounded-lg border border-blue-100">
-                      + Ajouter Équipe
+                    <button
+                      type="button"
+                      onClick={() => setTeamCreationMode('manual')}
+                      className={clsx(
+                        "px-3 py-1.5 rounded-lg font-bold text-sm border-2 transition-all",
+                        teamCreationMode === 'manual'
+                          ? "bg-slate-800 text-white border-slate-800"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                      )}
+                    >
+                      Composition Manuelle ✍️
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTeamCreationMode('random')}
+                      className={clsx(
+                        "px-3 py-1.5 rounded-lg font-bold text-sm border-2 transition-all",
+                        teamCreationMode === 'random'
+                          ? "bg-purple-600 text-white border-purple-600"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                      )}
+                    >
+                      Générateur Aléatoire 🎲
                     </button>
                   </div>
                 )}
              </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {localTeams.map((team, tIndex) => (
-                   <div key={tIndex} className={clsx("p-4 rounded-3xl border-2 flex flex-col", tIndex % 2 === 0 ? "bg-blue-50 border-blue-100" : "bg-pink-50 border-pink-100")}>
-                      <input 
-                        value={team.name}
-                        onChange={(e) => handleLocalTeamNameChange(tIndex, e.target.value)}
-                        disabled={roomId && !isHost}
-                        className={clsx("text-xl font-black bg-transparent outline-none mb-4 w-full", tIndex % 2 === 0 ? "text-blue-600" : "text-pink-600")}
-                      />
-                      <div className="flex-1 space-y-2">
-                        {team.members.map((member, mIndex) => (
-                           <PlayerItem 
-                              key={`${tIndex}-${mIndex}`}
-                              player={{ id: `local-${tIndex}-${mIndex}`, name: member, team: `team${tIndex}` }} // Mock player object
-                              index={mIndex}
-                              teamIndex={tIndex}
-                              isLocal={!roomId}
-                              onLocalChange={handleLocalMemberChange}
-                              onRemove={removeLocalMember}
-                           />
-                        ))}
-                        {!roomId && (
-                           <button 
-                              onClick={() => addLocalMember(tIndex)}
-                              className={clsx("w-full py-2 mt-2 rounded-lg border-2 border-dashed font-bold text-sm hover:bg-opacity-50", 
-                                tIndex % 2 === 0 ? "border-blue-300 text-blue-400 hover:bg-blue-100" : "border-pink-300 text-pink-400 hover:bg-pink-100"
-                              )}
-                           >
-                              + Ajouter
-                           </button>
-                        )}
+             {teamCreationMode === 'random' && !roomId ? (
+                <div className="bg-white p-6 rounded-3xl border-2 border-purple-100 shadow-sm flex flex-col gap-4">
+                  <h4 className="text-lg font-black text-purple-700">Générateur d'Équipes Aléatoires</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-slate-500 uppercase">
+                      Noms des joueurs (un par ligne ou séparés par des virgules)
+                    </label>
+                    <textarea
+                      value={randomPlayersText}
+                      onChange={(e) => setRandomPlayersText(e.target.value)}
+                      placeholder="Ex: Alice, Bob, Charlie, David, Eve, Franck..."
+                      rows={4}
+                      className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-800 outline-none focus:border-purple-400 placeholder:text-slate-300 resize-none text-sm"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-6 justify-between">
+                    <div>
+                      <label className="block text-sm font-bold mb-2 text-slate-500 uppercase">
+                        Nombre d'équipes désiré
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setRandomTeamsCount(prev => Math.max(2, prev - 1))}
+                          className="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold flex items-center justify-center border-2 border-slate-200"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min={2}
+                          max={10}
+                          value={randomTeamsCount}
+                          onChange={(e) => setRandomTeamsCount(Math.max(2, Math.min(10, Number(e.target.value) || 2)))}
+                          className="w-16 h-10 text-center font-black text-slate-800 bg-slate-50 border-2 border-slate-200 rounded-lg outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setRandomTeamsCount(prev => Math.min(10, prev + 1))}
+                          className="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold flex items-center justify-center border-2 border-slate-200"
+                        >
+                          +
+                        </button>
                       </div>
-                   </div>
-                ))}
-             </div>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={handleGenerateRandomTeams}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl transition-all shadow-md active:scale-95 text-sm"
+                    >
+                      Mélanger & Générer 🎲
+                    </button>
+                  </div>
+                </div>
+             ) : (
+                <div className="flex flex-col gap-4">
+                  {!roomId && (
+                    <div className="flex justify-end gap-2 pr-2">
+                      {localTeams.length > 2 && (
+                        <button onClick={handleRemoveTeam} className="text-red-400 hover:text-red-600 font-bold text-sm px-2 py-1 bg-red-50 rounded-lg border border-red-100">
+                          - Retirer Équipe
+                        </button>
+                      )}
+                      <button onClick={handleAddTeam} className="text-blue-500 hover:text-blue-700 font-bold text-sm px-2 py-1 bg-blue-50 rounded-lg border border-blue-100">
+                        + Ajouter Équipe
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {localTeams.map((team, tIndex) => (
+                       <div key={tIndex} className={clsx("p-4 rounded-3xl border-2 flex flex-col", tIndex % 2 === 0 ? "bg-blue-50 border-blue-100" : "bg-pink-50 border-pink-100")}>
+                          <input 
+                            value={team.name}
+                            onChange={(e) => handleLocalTeamNameChange(tIndex, e.target.value)}
+                            disabled={roomId && !isHost}
+                            className={clsx("text-xl font-black bg-transparent outline-none mb-4 w-full", tIndex % 2 === 0 ? "text-blue-600" : "text-pink-600")}
+                          />
+                          <div className="flex-1 space-y-2">
+                            {team.members.map((member, mIndex) => (
+                               <PlayerItem 
+                                  key={`${tIndex}-${mIndex}`}
+                                  player={{ id: `local-${tIndex}-${mIndex}`, name: member, team: `team${tIndex}` }}
+                                  index={mIndex}
+                                  teamIndex={tIndex}
+                                  isLocal={!roomId}
+                                  onLocalChange={handleLocalMemberChange}
+                                  onRemove={removeLocalMember}
+                               />
+                            ))}
+                            {!roomId && (
+                               <button 
+                                  onClick={() => addLocalMember(tIndex)}
+                                  className={clsx("w-full py-2 mt-2 rounded-lg border-2 border-dashed font-bold text-sm hover:bg-opacity-50", 
+                                    tIndex % 2 === 0 ? "border-blue-300 text-blue-400 hover:bg-blue-100" : "border-pink-300 text-pink-400 hover:bg-pink-100"
+                                  )}
+                               >
+                                  + Ajouter Joueur
+                               </button>
+                            )}
+                          </div>
+                       </div>
+                    ))}
+                  </div>
+                </div>
+             )}
           </div>
         </div>
 
