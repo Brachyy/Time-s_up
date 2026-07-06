@@ -5,6 +5,8 @@ export const initialState = {
     { name: 'Équipe 2', score: 0, members: [], currentPlayerIndex: 0, playerStats: {} }
   ],
   deck: [], 
+  waitingDeck: [],
+  fullDeck: [],
   currentRound: 1, 
   currentTeam: 0, 
   gameState: 'HOME', 
@@ -35,6 +37,8 @@ export const gameReducer = (state, action) => {
         ...state, 
         gameState: 'PLAYING', 
         deck,
+        waitingDeck: [],
+        fullDeck: deck,
         teams: initializedTeams,
         settings: { mode, cardCount, timerDuration },
         currentRound: 1,
@@ -66,23 +70,43 @@ export const gameReducer = (state, action) => {
 
       const nextRoundTeamIdx = (finishedTeamIdx + 1) % state.teams.length;
 
-      const resetDeck = state.deck.map(card => ({ ...card, guessed: false }));
+      const resetDeck = state.fullDeck.map(card => ({ ...card, guessed: false }));
       const shuffledDeck = resetDeck.sort(() => 0.5 - Math.random());
       
       return { 
         ...state, 
         currentRound: state.currentRound + 1, 
         deck: shuffledDeck,
+        waitingDeck: [],
         gameState: 'PAUSED',
         currentTeam: nextRoundTeamIdx,
         teams: nextRoundTeams
       };
     case 'END_TURN':
       let updatedPlayedCards = state.playedCardsInTurn;
+      let finalDeckEnd = state.deck;
+      let finalWaitingDeckEnd = state.waitingDeck || [];
+      
       if (action.payload) {
-        updatedPlayedCards = [...updatedPlayedCards, { ...action.payload, status: 'timeout' }];
+        const timeoutCardId = action.payload.id;
+        const timeoutCard = state.deck.find(c => c.id === timeoutCardId);
+        if (timeoutCard) {
+          finalDeckEnd = state.deck.filter(c => c.id !== timeoutCardId);
+          updatedPlayedCards = [...updatedPlayedCards, { ...timeoutCard, status: 'timeout' }];
+          
+          if (finalDeckEnd.length === 0 && finalWaitingDeckEnd.length > 0) {
+            finalDeckEnd = [...finalWaitingDeckEnd].sort(() => 0.5 - Math.random());
+            finalWaitingDeckEnd = [];
+          }
+        }
       }
-      return { ...state, gameState: 'TURN_REVIEW', playedCardsInTurn: updatedPlayedCards };
+      return { 
+        ...state, 
+        deck: finalDeckEnd,
+        waitingDeck: finalWaitingDeckEnd,
+        gameState: 'TURN_REVIEW', 
+        playedCardsInTurn: updatedPlayedCards 
+      };
 
     case 'VALIDATE_TURN':
       const invalidatedIds = action.payload || [];
@@ -94,9 +118,9 @@ export const gameReducer = (state, action) => {
       const currentTeamIndex = state.currentTeam;
       const currentTeamVal = state.teams[currentTeamIndex];
       
-      // Find cards that were actually guessed during the active turn (not the timeout card)
+      // Find cards that were actually guessed during the active turn (not skipped, taboo, or timeout)
       const guessedDuringTurnIds = (state.playedCardsInTurn || [])
-        .filter(c => c.status !== 'timeout')
+        .filter(c => c.status !== 'timeout' && c.status !== 'skipped' && c.status !== 'taboo')
         .map(c => c.id);
 
       // The net change is: (validated cards) - (cards that already incremented the score during the turn)
@@ -120,11 +144,20 @@ export const gameReducer = (state, action) => {
         playerStats: newPlayerStats
       };
 
-      const revertDeck = state.deck.map(card => {
-        if (validatedIds.includes(card.id)) return { ...card, guessed: true };
-        if (invalidatedIds.includes(card.id)) return { ...card, guessed: false };
-        return card;
-      });
+      // Invalidated cards are marked as guessed: false and added to the waitingDeck
+      const invalidatedCards = state.playedCardsInTurn
+        .filter(c => invalidatedIds.includes(c.id))
+        .map(c => ({ id: c.id, word: c.word, guessed: false }));
+      
+      const updatedWaitingDeck = [...(state.waitingDeck || []), ...invalidatedCards];
+
+      let finalDeckVal = state.deck;
+      let finalWaitingDeckVal = updatedWaitingDeck;
+      
+      if (finalDeckVal.length === 0 && finalWaitingDeckVal.length > 0) {
+        finalDeckVal = [...finalWaitingDeckVal].sort(() => 0.5 - Math.random());
+        finalWaitingDeckVal = [];
+      }
 
       const team = newTeams[currentTeamIndex];
       const nextPlayerIndex = (team.currentPlayerIndex + 1) % (team.members.length || 1);
@@ -134,13 +167,15 @@ export const gameReducer = (state, action) => {
       };
 
       const nextTeamIndex = (currentTeamIndex + 1) % state.teams.length;
+      const isRoundOver = finalDeckVal.length === 0 && finalWaitingDeckVal.length === 0;
 
       return { 
         ...state, 
-        deck: revertDeck,
+        deck: finalDeckVal,
+        waitingDeck: finalWaitingDeckVal,
         teams: newTeams,
-        gameState: 'PAUSED', 
-        currentTeam: nextTeamIndex,
+        gameState: isRoundOver ? 'PLAYING' : 'PAUSED', 
+        currentTeam: isRoundOver ? state.currentTeam : nextTeamIndex,
         playedCardsInTurn: []
       };
 
@@ -149,29 +184,52 @@ export const gameReducer = (state, action) => {
     case 'PASS_CARD':
       const passCardId = action.payload;
       const passCard = state.deck.find(c => c.id === passCardId);
-      const passOtherCards = state.deck.filter(c => c.id !== passCardId);
+      if (!passCard) return state;
+      
+      const passUpdatedDeck = state.deck.filter(c => c.id !== passCardId);
+      const passCardWithStatus = { ...passCard, status: 'skipped' };
+      
+      let finalDeckPass = passUpdatedDeck;
+      let finalWaitingDeckPass = state.waitingDeck || [];
+      if (finalDeckPass.length === 0 && finalWaitingDeckPass.length > 0) {
+        finalDeckPass = [...finalWaitingDeckPass].sort(() => 0.5 - Math.random());
+        finalWaitingDeckPass = [];
+      }
+      
       return {
         ...state,
-        deck: [...passOtherCards, passCard]
+        deck: finalDeckPass,
+        waitingDeck: finalWaitingDeckPass,
+        playedCardsInTurn: [...state.playedCardsInTurn, passCardWithStatus]
       };
     case 'TABOO_ERROR':
       const tabooCardId = action.payload;
-      const cardToMove = state.deck.find(c => c.id === tabooCardId);
-      const otherCards = state.deck.filter(c => c.id !== tabooCardId);
-      const newDeckOrder = [...otherCards, cardToMove];
-
+      const tabooCard = state.deck.find(c => c.id === tabooCardId);
+      if (!tabooCard) return state;
+      
+      const tabooUpdatedDeck = state.deck.filter(c => c.id !== tabooCardId);
+      const tabooCardWithStatus = { ...tabooCard, status: 'taboo' };
+      
+      let finalDeckTaboo = tabooUpdatedDeck;
+      let finalWaitingDeckTaboo = state.waitingDeck || [];
+      if (finalDeckTaboo.length === 0 && finalWaitingDeckTaboo.length > 0) {
+        finalDeckTaboo = [...finalWaitingDeckTaboo].sort(() => 0.5 - Math.random());
+        finalWaitingDeckTaboo = [];
+      }
+      
       return { 
         ...state, 
-        deck: newDeckOrder,
+        deck: finalDeckTaboo,
+        waitingDeck: finalWaitingDeckTaboo,
+        playedCardsInTurn: [...state.playedCardsInTurn, tabooCardWithStatus],
         gameState: 'TURN_REVIEW' 
       };
 
     case 'CARD_GUESSED':
       const cardId = action.payload;
-      const updatedDeck = state.deck.map(card => 
-        card.id === cardId ? { ...card, guessed: true } : card
-      );
+      const updatedDeck = state.deck.filter(card => card.id !== cardId);
       const guessedCard = state.deck.find(c => c.id === cardId);
+      if (!guessedCard) return state;
       
       const currentTeamIdx = state.currentTeam;
       const cTeam = state.teams[currentTeamIdx];
@@ -189,12 +247,20 @@ export const gameReducer = (state, action) => {
         score: cTeam.score + 1,
         playerStats: updatedPlayerStats
       };
+
+      let finalDeckGuessed = updatedDeck;
+      let finalWaitingDeckGuessed = state.waitingDeck || [];
+      if (finalDeckGuessed.length === 0 && finalWaitingDeckGuessed.length > 0) {
+        finalDeckGuessed = [...finalWaitingDeckGuessed].sort(() => 0.5 - Math.random());
+        finalWaitingDeckGuessed = [];
+      }
       
       return { 
         ...state, 
-        deck: updatedDeck, 
+        deck: finalDeckGuessed, 
+        waitingDeck: finalWaitingDeckGuessed,
         teams: updatedTeams,
-        playedCardsInTurn: [...state.playedCardsInTurn, guessedCard]
+        playedCardsInTurn: [...state.playedCardsInTurn, { ...guessedCard, guessed: true }]
       };
     default:
       return state;

@@ -9,7 +9,9 @@ const TurnReview = () => {
   const { state, dispatch } = useGame();
   const playedCards = state.playedCardsInTurn || [];
   const [invalidatedIds, setInvalidatedIds] = useState(() =>
-    playedCards.filter(card => card.status === 'timeout').map(card => card.id)
+    playedCards
+      .filter(card => card.status === 'timeout' || card.status === 'skipped' || card.status === 'taboo')
+      .map(card => card.id)
   );
 
   const toggleCard = (id) => {
@@ -73,6 +75,16 @@ const TurnReview = () => {
                       {isTimeout && (
                         <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">
                           Temps écoulé ⏳
+                        </span>
+                      )}
+                      {card.status === 'skipped' && (
+                        <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">
+                          Passé ⏭️
+                        </span>
+                      )}
+                      {card.status === 'taboo' && (
+                        <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">
+                          Tabou ⚠️
                         </span>
                       )}
                     </div>
