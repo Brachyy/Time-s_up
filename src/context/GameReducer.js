@@ -59,15 +59,6 @@ export const gameReducer = (state, action) => {
       }
       
       const finishedTeamIdx = state.currentTeam;
-      const finishedTeam = state.teams[finishedTeamIdx];
-      
-      // Update finished team's player index
-      const nextRoundTeams = [...state.teams];
-      nextRoundTeams[finishedTeamIdx] = {
-        ...finishedTeam,
-        currentPlayerIndex: (finishedTeam.currentPlayerIndex + 1) % (finishedTeam.members.length || 1)
-      };
-
       const nextRoundTeamIdx = (finishedTeamIdx + 1) % state.teams.length;
 
       const resetDeck = state.fullDeck.map(card => ({ ...card, guessed: false }));
@@ -79,8 +70,7 @@ export const gameReducer = (state, action) => {
         deck: shuffledDeck,
         waitingDeck: [],
         gameState: 'PAUSED',
-        currentTeam: nextRoundTeamIdx,
-        teams: nextRoundTeams
+        currentTeam: nextRoundTeamIdx
       };
     case 'END_TURN':
       let updatedPlayedCards = state.playedCardsInTurn;
