@@ -129,12 +129,30 @@ export const gameReducer = (state, action) => {
       const newScore = Math.max(0, currentTeamVal.score + netChange);
       
       const pIndex = currentTeamVal.currentPlayerIndex;
-      const currentStats = currentTeamVal.playerStats[pIndex] || { guessed: 0 };
-      const newGuessedCount = Math.max(0, (currentStats.guessed || 0) + netChange);
-      
+      const currentStats = currentTeamVal.playerStats[pIndex] || { guessed: 0, words: [] };
+      let playerWords = [...(currentStats.words || [])];
+
+      // Process each card played during this turn:
+      // - If it was validated (not in invalidatedIds), make sure it is in playerWords
+      // - If it was invalidated (in invalidatedIds), remove it from playerWords
+      (state.playedCardsInTurn || []).forEach(card => {
+        if (invalidatedIds.includes(card.id)) {
+          playerWords = playerWords.filter(w => !(w.id === card.id && w.round === state.currentRound));
+        } else {
+          const exists = playerWords.some(w => w.id === card.id && w.round === state.currentRound);
+          if (!exists) {
+            playerWords.push({ word: card.word, round: state.currentRound, id: card.id });
+          }
+        }
+      });
+
       const newPlayerStats = {
         ...currentTeamVal.playerStats,
-        [pIndex]: { ...currentStats, guessed: newGuessedCount }
+        [pIndex]: {
+          ...currentStats,
+          guessed: playerWords.length,
+          words: playerWords
+        }
       };
 
       const newTeams = [...state.teams];
@@ -235,10 +253,15 @@ export const gameReducer = (state, action) => {
       const cTeam = state.teams[currentTeamIdx];
       const currentPlayerIdx = cTeam.currentPlayerIndex;
       
-      const cStats = cTeam.playerStats[currentPlayerIdx] || { guessed: 0 };
+      const cStats = cTeam.playerStats[currentPlayerIdx] || { guessed: 0, words: [] };
+      const newWordEntry = { word: guessedCard.word, round: state.currentRound, id: guessedCard.id };
       const updatedPlayerStats = {
         ...cTeam.playerStats,
-        [currentPlayerIdx]: { ...cStats, guessed: (cStats.guessed || 0) + 1 }
+        [currentPlayerIdx]: { 
+          ...cStats, 
+          guessed: (cStats.guessed || 0) + 1,
+          words: [...(cStats.words || []), newWordEntry]
+        }
       };
 
       const updatedTeams = [...state.teams];

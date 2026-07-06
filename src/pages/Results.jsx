@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../components/UI/Button';
 import clsx from 'clsx';
 
 const Results = () => {
   const { state } = useGame();
   const teams = state.teams; // Array of teams
+  const [expandedPlayerIndex, setExpandedPlayerIndex] = useState(null);
 
   // Sort teams by score descending
   const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
@@ -18,11 +19,12 @@ const Results = () => {
   const allPlayers = [];
   teams.forEach((team) => {
     team.members.forEach((member, mIndex) => {
-      const stats = team.playerStats && team.playerStats[mIndex] ? team.playerStats[mIndex].guessed : 0;
+      const stats = team.playerStats && team.playerStats[mIndex] ? team.playerStats[mIndex] : { guessed: 0, words: [] };
       allPlayers.push({
         name: member,
         teamName: team.name,
-        score: stats
+        score: stats.guessed || 0,
+        words: stats.words || []
       });
     });
   });
@@ -80,23 +82,86 @@ const Results = () => {
 
           {/* PLAYERS SECTION */}
           <div>
-            <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-4">Classement Joueurs</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-               {topPlayers.map((player, i) => (
-                 <div key={i} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-blue-100 transition-colors">
-                    <span className={clsx(
-                      "w-8 h-8 flex items-center justify-center rounded-full font-black text-white shrink-0",
-                      i === 0 ? "bg-yellow-400" : i === 1 ? "bg-slate-400" : i === 2 ? "bg-orange-400" : "bg-slate-100 text-slate-400"
-                    )}>
-                      {i + 1}
-                    </span>
-                    <div className="text-left min-w-0">
-                      <p className="font-bold text-slate-700 truncate">{player.name}</p>
-                      <p className="text-xs font-bold text-slate-400 uppercase truncate">{player.teamName}</p>
-                    </div>
-                    <div className="ml-auto font-black text-blue-500">{player.score}</div>
-                 </div>
-               ))}
+            <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-2">Classement Joueurs</h2>
+            <p className="text-xs text-slate-400 font-bold mb-4 italic">(Cliquez sur un joueur pour voir ses mots devinés)</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+               {topPlayers.map((player, i) => {
+                 const isExpanded = expandedPlayerIndex === i;
+                 const wordsByRound = { 1: [], 2: [], 3: [] };
+                 if (player.words) {
+                   player.words.forEach(w => {
+                     if (wordsByRound[w.round]) {
+                       wordsByRound[w.round].push(w.word);
+                     }
+                   });
+                 }
+
+                 return (
+                   <div key={i} className="flex flex-col gap-2">
+                     <div 
+                       onClick={() => setExpandedPlayerIndex(isExpanded ? null : i)}
+                       className={clsx(
+                         "flex items-center gap-3 p-3 bg-white border rounded-xl shadow-sm hover:border-blue-200 transition-all cursor-pointer select-none active:scale-98",
+                         isExpanded ? "border-blue-400 ring-2 ring-blue-50" : "border-slate-100"
+                       )}
+                     >
+                        <span className={clsx(
+                          "w-8 h-8 flex items-center justify-center rounded-full font-black text-white shrink-0",
+                          i === 0 ? "bg-yellow-400" : i === 1 ? "bg-slate-400" : i === 2 ? "bg-orange-400" : "bg-slate-100 text-slate-400"
+                        )}>
+                          {i + 1}
+                        </span>
+                        <div className="text-left min-w-0 flex-1">
+                          <p className="font-bold text-slate-700 truncate">{player.name}</p>
+                          <p className="text-xs font-bold text-slate-400 uppercase truncate">{player.teamName}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-blue-500">{player.score} {player.score > 1 ? 'mots' : 'mot'}</span>
+                          <span className="text-slate-400 font-bold text-[10px]">{isExpanded ? '▲' : '▼'}</span>
+                        </div>
+                     </div>
+
+                     <AnimatePresence>
+                       {isExpanded && (
+                         <motion.div
+                           initial={{ height: 0, opacity: 0 }}
+                           animate={{ height: 'auto', opacity: 1 }}
+                           exit={{ height: 0, opacity: 0 }}
+                           className="overflow-hidden bg-slate-50 border-2 border-slate-100 rounded-xl p-4 text-left space-y-3"
+                         >
+                           <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">
+                             Détail des mots devinés :
+                           </h4>
+                           {[1, 2, 3].map(roundNum => {
+                             const roundWords = wordsByRound[roundNum];
+                             if (roundWords.length === 0) return null;
+                             return (
+                               <div key={roundNum} className="flex flex-col gap-1">
+                                 <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                   Manche {roundNum} :
+                                 </span>
+                                 <div className="flex flex-wrap gap-1.5">
+                                   {roundWords.map((word, wIdx) => (
+                                     <span 
+                                       key={wIdx} 
+                                       className="bg-white border border-slate-200 px-2 py-0.5 rounded-full text-xs font-medium text-slate-700 shadow-sm"
+                                     >
+                                       {word}
+                                     </span>
+                                   ))}
+                                 </div>
+                               </div>
+                             );
+                           })}
+                           {player.score === 0 && (
+                             <p className="text-xs text-slate-400 italic">Aucun mot deviné pendant la partie 😢</p>
+                           )}
+                         </motion.div>
+                       )}
+                     </AnimatePresence>
+                   </div>
+                 );
+               })}
             </div>
           </div>
         </div>
