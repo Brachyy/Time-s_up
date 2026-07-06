@@ -1,25 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import Button from '../components/UI/Button';
-import { motion, AnimatePresence } from 'framer-motion';
+/* eslint-disable-next-line no-unused-vars */
+import { motion } from 'framer-motion';
 import clsx from 'clsx';
 
 const TurnReview = () => {
   const { state, dispatch } = useGame();
-  const [invalidatedIds, setInvalidatedIds] = useState([]);
-  
   const playedCards = state.playedCardsInTurn || [];
-
-  // Initialize invalidated cards (e.g. timeout cards)
-  useEffect(() => {
-    const timeoutIds = playedCards
-      .filter(card => card.status === 'timeout')
-      .map(card => card.id);
-    
-    if (timeoutIds.length > 0) {
-      setInvalidatedIds(prev => [...new Set([...prev, ...timeoutIds])]);
-    }
-  }, []); // Run once on mount
+  const [invalidatedIds, setInvalidatedIds] = useState(() =>
+    playedCards.filter(card => card.status === 'timeout').map(card => card.id)
+  );
 
   const toggleCard = (id) => {
     setInvalidatedIds(prev => 

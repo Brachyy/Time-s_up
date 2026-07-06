@@ -94,11 +94,19 @@ export const gameReducer = (state, action) => {
       const currentTeamIndex = state.currentTeam;
       const currentTeamVal = state.teams[currentTeamIndex];
       
-      const newScore = Math.max(0, currentTeamVal.score - invalidatedIds.length);
+      // Find cards that were actually guessed during the active turn (not the timeout card)
+      const guessedDuringTurnIds = (state.playedCardsInTurn || [])
+        .filter(c => c.status !== 'timeout')
+        .map(c => c.id);
+
+      // The net change is: (validated cards) - (cards that already incremented the score during the turn)
+      const netChange = validatedIds.length - guessedDuringTurnIds.length;
+
+      const newScore = Math.max(0, currentTeamVal.score + netChange);
       
       const pIndex = currentTeamVal.currentPlayerIndex;
       const currentStats = currentTeamVal.playerStats[pIndex] || { guessed: 0 };
-      const newGuessedCount = Math.max(0, (currentStats.guessed || 0) - invalidatedIds.length);
+      const newGuessedCount = Math.max(0, (currentStats.guessed || 0) + netChange);
       
       const newPlayerStats = {
         ...currentTeamVal.playerStats,
