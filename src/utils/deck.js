@@ -4,18 +4,37 @@ import THEMES from '../data/themes.json';
 export const generateDeck = (mode = 'celebrities', count = 40) => {
   let sourceList = [];
 
-  if (mode === 'words') {
-    sourceList = WORDS;
-  } else if (THEMES[mode]) {
-    sourceList = THEMES[mode];
-  } else if (mode === 'mixed') {
-    // Combine all available categories for a complete mashup
-    sourceList = [
-      ...WORDS,
-      ...Object.values(THEMES).flat()
-    ];
+  if (Array.isArray(mode)) {
+    const accumulated = [];
+    mode.forEach(m => {
+      if (m === 'words') {
+        accumulated.push(...WORDS);
+      } else if (THEMES[m]) {
+        accumulated.push(...THEMES[m]);
+      } else if (m === 'mixed') {
+        accumulated.push(...WORDS, ...Object.values(THEMES).flat());
+      }
+    });
+    sourceList = accumulated;
   } else {
-    sourceList = WORDS; // Fallback
+    if (mode === 'words') {
+      sourceList = WORDS;
+    } else if (THEMES[mode]) {
+      sourceList = THEMES[mode];
+    } else if (mode === 'mixed') {
+      // Combine all available categories for a complete mashup
+      sourceList = [
+        ...WORDS,
+        ...Object.values(THEMES).flat()
+      ];
+    } else {
+      sourceList = WORDS; // Fallback
+    }
+  }
+
+  // Final fallback to prevent empty list
+  if (sourceList.length === 0) {
+    sourceList = WORDS;
   }
 
   // Shuffle and deduplicate items to ensure unique entries

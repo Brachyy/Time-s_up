@@ -83,6 +83,13 @@ const ALL_THEMES = [
   { value: 'disney', label: 'Univers Disney', emoji: '🏰', category: 'Pop-Culture' },
   { value: 'board_games', label: 'Jeux de Société', emoji: '🎲', category: 'Loisirs' },
   { value: 'vehicles', label: 'Véhicules & Transports', emoji: '🚗', category: 'Général' },
+  { value: 'cartoons', label: 'Dessins Animés', emoji: '🧸', category: 'Pop-Culture' },
+  { value: 'history', label: 'Histoire & Rois', emoji: '👑', category: 'Savoir' },
+  { value: 'nature', label: 'Nature & Botanique', emoji: '🌲', category: 'Nature & Sciences' },
+  { value: 'science', label: 'Sciences & Espace', emoji: '🔬', category: 'Nature & Sciences' },
+  { value: 'literature', label: 'Littérature & Livres', emoji: '📚', category: 'Savoir' },
+  { value: 'music_artists', label: 'Artistes Musicaux', emoji: '🎵', category: 'Pop-Culture' },
+  { value: 'geek', label: 'Technologie & Geek', emoji: '💻', category: 'Pop-Culture' },
 ];
 
 const Setup = () => {
@@ -90,10 +97,29 @@ const Setup = () => {
   const { roomId, isHost, playerId, onlineState, updateRoomData } = useMultiplayer();
   
   // Local state for inputs
-  const [mode, setMode] = useState('celebrities');
+  const [mode, setMode] = useState(['celebrities']);
   const [themeSearch, setThemeSearch] = useState('');
   const [cardCount, setCardCount] = useState(40);
   const [timerDuration, setTimerDuration] = useState(30);
+
+  const handleToggleTheme = (themeValue) => {
+    let newModes;
+    if (themeValue === 'mixed' || themeValue === 'words') {
+      newModes = [themeValue];
+    } else {
+      const cleaned = mode.filter(m => m !== 'mixed' && m !== 'words');
+      if (cleaned.includes(themeValue)) {
+        newModes = cleaned.filter(m => m !== themeValue);
+        if (newModes.length === 0) {
+          newModes = ['celebrities'];
+        }
+      } else {
+        newModes = [...cleaned, themeValue];
+      }
+    }
+    setMode(newModes);
+    updateSettings({ mode: newModes });
+  };
   
   // Custom Only Mode
   const [customOnly, setCustomOnly] = useState(false);
@@ -118,7 +144,9 @@ const Setup = () => {
   // --- SYNC LOGIC (Online Only) ---
   useEffect(() => {
     if (roomId && onlineState?.settings) {
-      setMode(onlineState.settings.mode);
+      if (onlineState.settings.mode) {
+        setMode(Array.isArray(onlineState.settings.mode) ? onlineState.settings.mode : [onlineState.settings.mode]);
+      }
       setCardCount(onlineState.settings.cardCount);
       setTimerDuration(onlineState.settings.timerDuration);
       setCustomOnly(onlineState.settings.customOnly || false);
@@ -280,7 +308,8 @@ const Setup = () => {
 
   const customWordsCount = roomId ? (onlineState?.customWords?.length || 0) : localCustomWords.length;
 
-  const activeTheme = ALL_THEMES.find(t => t.value === mode) || ALL_THEMES[0];
+  const activeThemes = ALL_THEMES.filter(t => mode.includes(t.value));
+  const displayThemes = activeThemes.length > 0 ? activeThemes : [ALL_THEMES[0]];
   const filteredThemes = ALL_THEMES.filter(t => 
     t.label.toLowerCase().includes(themeSearch.toLowerCase()) || 
     t.category.toLowerCase().includes(themeSearch.toLowerCase())
@@ -310,12 +339,21 @@ const Setup = () => {
                {/* Mode & Custom Toggle */}
                <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-2">
-                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                       <label className="block text-sm font-bold text-slate-400 uppercase">Thème des Mots</label>
-                       {/* Active theme badge */}
-                       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-black border border-purple-100 self-start">
-                         Actif : <span className="text-base leading-none">{activeTheme.emoji}</span> <span>{activeTheme.label}</span>
-                         <span className="text-[10px] bg-purple-200/50 px-1.5 py-0.5 rounded text-purple-800 uppercase font-black tracking-wider">{activeTheme.category}</span>
+                     <div className="flex flex-col gap-1.5">
+                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                         <label className="block text-sm font-bold text-slate-400 uppercase">Thèmes Sélectionnés</label>
+                         <span className="text-[10px] text-slate-400 font-bold italic">
+                           (Sélectionnez plusieurs thèmes simultanément si désiré)
+                         </span>
+                       </div>
+                       {/* Active theme badges wrapping container */}
+                       <div className="flex flex-wrap gap-1 mt-1 max-w-full">
+                         {displayThemes.map(t => (
+                           <span key={t.value} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-black border border-purple-100 shadow-sm">
+                             <span>{t.emoji}</span>
+                             <span>{t.label}</span>
+                           </span>
+                         ))}
                        </div>
                      </div>
 
@@ -348,12 +386,12 @@ const Setup = () => {
                        {filteredThemes.length > 0 ? (
                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                            {filteredThemes.map(theme => {
-                             const isSelected = mode === theme.value;
+                             const isSelected = mode.includes(theme.value);
                              return (
                                <button
                                  key={theme.value}
                                  type="button"
-                                 onClick={() => { setMode(theme.value); updateSettings({ mode: theme.value }); }}
+                                 onClick={() => handleToggleTheme(theme.value)}
                                  disabled={roomId && !isHost}
                                  className={clsx(
                                    "py-2 px-2.5 rounded-xl font-bold transition-all border-2 text-xs flex items-center gap-2 active:scale-95 shadow-sm truncate",
