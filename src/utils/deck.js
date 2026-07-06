@@ -12,14 +12,7 @@ export const generateDeck = (mode = 'celebrities', count = 40) => {
     // Combine all available categories for a complete mashup
     sourceList = [
       ...WORDS,
-      ...THEMES.celebrities,
-      ...THEMES.objects,
-      ...THEMES.animals,
-      ...THEMES.movies,
-      ...THEMES.jobs,
-      ...THEMES.sports,
-      ...THEMES.food,
-      ...THEMES.actions
+      ...Object.values(THEMES).flat()
     ];
   } else {
     sourceList = WORDS; // Fallback

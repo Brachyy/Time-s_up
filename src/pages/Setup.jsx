@@ -58,12 +58,40 @@ const PlayerItem = ({
   </motion.div>
 );
 
+const ALL_THEMES = [
+  { value: 'celebrities', label: 'Célébrités', emoji: '🎭', category: 'Populaire' },
+  { value: 'words', label: 'Mots Généraux', emoji: '📝', category: 'Général' },
+  { value: 'mixed', label: 'Mélange de tous', emoji: '🎲', category: 'Général' },
+  { value: 'objects', label: 'Objets du quotidien', emoji: '🏠', category: 'Général' },
+  { value: 'animals', label: 'Animaux', emoji: '🦁', category: 'Nature & Sciences' },
+  { value: 'movies', label: 'Films & Séries', emoji: '🍿', category: 'Pop-Culture' },
+  { value: 'jobs', label: 'Métiers', emoji: '🛠️', category: 'Général' },
+  { value: 'sports', label: 'Sports & Hobbies', emoji: '⚽', category: 'Loisirs' },
+  { value: 'food', label: 'Nourriture & Boissons', emoji: '🍕', category: 'Général' },
+  { value: 'actions', label: 'Actions & Corps', emoji: '💃', category: 'Général' },
+  { value: 'pokemon', label: 'Pokémon', emoji: '🦖', category: 'Pop-Culture' },
+  { value: 'countries', label: 'Pays du Monde', emoji: '🌍', category: 'Nature & Sciences' },
+  { value: 'capitals', label: 'Capitales', emoji: '🏛️', category: 'Nature & Sciences' },
+  { value: 'superheroes', label: 'Super-héros', emoji: '🦸', category: 'Pop-Culture' },
+  { value: 'video_games', label: 'Jeux Vidéo', emoji: '🎮', category: 'Pop-Culture' },
+  { value: 'brands', label: 'Marques Célèbres', emoji: '🏷️', category: 'Pop-Culture' },
+  { value: 'monuments', label: 'Monuments du Monde', emoji: '🗼', category: 'Nature & Sciences' },
+  { value: 'mythology', label: 'Mythologie Grecque', emoji: '⚡', category: 'Nature & Sciences' },
+  { value: 'star_wars', label: 'Star Wars', emoji: '🌌', category: 'Pop-Culture' },
+  { value: 'harry_potter', label: 'Harry Potter', emoji: '🧹', category: 'Pop-Culture' },
+  { value: 'instruments', label: 'Instruments de Musique', emoji: '🎸', category: 'Loisirs' },
+  { value: 'disney', label: 'Univers Disney', emoji: '🏰', category: 'Pop-Culture' },
+  { value: 'board_games', label: 'Jeux de Société', emoji: '🎲', category: 'Loisirs' },
+  { value: 'vehicles', label: 'Véhicules & Transports', emoji: '🚗', category: 'Général' },
+];
+
 const Setup = () => {
   const { dispatch } = useGame();
   const { roomId, isHost, playerId, onlineState, updateRoomData } = useMultiplayer();
   
   // Local state for inputs
   const [mode, setMode] = useState('celebrities');
+  const [themeSearch, setThemeSearch] = useState('');
   const [cardCount, setCardCount] = useState(40);
   const [timerDuration, setTimerDuration] = useState(30);
   
@@ -250,8 +278,13 @@ const Setup = () => {
     dispatch({ type: 'START_GAME', payload });
   };
 
-  // --- RENDER HELPERS ---
   const customWordsCount = roomId ? (onlineState?.customWords?.length || 0) : localCustomWords.length;
+
+  const activeTheme = ALL_THEMES.find(t => t.value === mode) || ALL_THEMES[0];
+  const filteredThemes = ALL_THEMES.filter(t => 
+    t.label.toLowerCase().includes(themeSearch.toLowerCase()) || 
+    t.category.toLowerCase().includes(themeSearch.toLowerCase())
+  );
 
   return (
     <div className="flex flex-col h-full w-full p-4 bg-slate-50 relative">
@@ -276,37 +309,70 @@ const Setup = () => {
             <div className="flex flex-col gap-4">
                {/* Mode & Custom Toggle */}
                <div className="flex flex-col gap-3">
-                  <div>
-                     <label className="block text-sm font-bold mb-2 text-slate-400 uppercase">Thème des Mots</label>
-                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                       {[
-                         { value: 'celebrities', label: 'Célébrités', emoji: '🎭' },
-                         { value: 'words', label: 'Mots Généraux', emoji: '📝' },
-                         { value: 'objects', label: 'Objets', emoji: '🏠' },
-                         { value: 'animals', label: 'Animaux', emoji: '🦁' },
-                         { value: 'movies', label: 'Films & Séries', emoji: '🍿' },
-                         { value: 'jobs', label: 'Métiers', emoji: '🛠️' },
-                         { value: 'sports', label: 'Sports', emoji: '⚽' },
-                         { value: 'food', label: 'Nourriture', emoji: '🍕' },
-                         { value: 'actions', label: 'Actions', emoji: '💃' },
-                         { value: 'mixed', label: 'Mélange', emoji: '🎲' }
-                       ].map(theme => (
+                  <div className="flex flex-col gap-2">
+                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                       <label className="block text-sm font-bold text-slate-400 uppercase">Thème des Mots</label>
+                       {/* Active theme badge */}
+                       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-black border border-purple-100 self-start">
+                         Actif : <span className="text-base leading-none">{activeTheme.emoji}</span> <span>{activeTheme.label}</span>
+                         <span className="text-[10px] bg-purple-200/50 px-1.5 py-0.5 rounded text-purple-800 uppercase font-black tracking-wider">{activeTheme.category}</span>
+                       </div>
+                     </div>
+
+                     {/* Theme Search Input */}
+                     <div className="relative">
+                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400 text-sm">
+                         🔍
+                       </span>
+                       <input
+                         type="text"
+                         value={themeSearch}
+                         onChange={(e) => setThemeSearch(e.target.value)}
+                         placeholder="Rechercher un thème... (ex: Pokémon, Harry Potter, Pays)"
+                         disabled={roomId && !isHost}
+                         className="w-full pl-9 pr-8 py-2 border-2 border-slate-100 rounded-xl focus:outline-none focus:border-purple-400 text-xs sm:text-sm font-semibold transition-all bg-slate-50/50 hover:bg-slate-50 focus:bg-white"
+                       />
+                       {themeSearch && (
                          <button
-                           key={theme.value}
                            type="button"
-                           onClick={() => { setMode(theme.value); updateSettings({ mode: theme.value }); }}
-                           disabled={roomId && !isHost}
-                           className={clsx(
-                             "py-2 px-1 rounded-xl font-bold transition-all border-2 text-xs sm:text-sm flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95",
-                             mode === theme.value 
-                               ? "bg-yellow-50 text-yellow-700 border-yellow-400 font-black shadow-inner" 
-                               : "bg-slate-50 text-slate-500 border-slate-100 hover:border-slate-300"
-                           )}
+                           onClick={() => setThemeSearch('')}
+                           className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-xs font-bold"
                          >
-                           <span className="text-lg">{theme.emoji}</span>
-                           <span className="truncate max-w-full">{theme.label}</span>
+                           ✕
                          </button>
-                       ))}
+                       )}
+                     </div>
+
+                     {/* Searchable themes grid */}
+                     <div className="max-h-48 overflow-y-auto pr-1 space-y-2 border-2 border-slate-50 rounded-2xl p-2 bg-slate-50/30 scrollbar-thin">
+                       {filteredThemes.length > 0 ? (
+                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                           {filteredThemes.map(theme => {
+                             const isSelected = mode === theme.value;
+                             return (
+                               <button
+                                 key={theme.value}
+                                 type="button"
+                                 onClick={() => { setMode(theme.value); updateSettings({ mode: theme.value }); }}
+                                 disabled={roomId && !isHost}
+                                 className={clsx(
+                                   "py-2 px-2.5 rounded-xl font-bold transition-all border-2 text-xs flex items-center gap-2 active:scale-95 shadow-sm truncate",
+                                   isSelected
+                                     ? "bg-purple-100 text-purple-800 border-purple-400 shadow-inner font-black"
+                                     : "bg-white text-slate-600 border-slate-100 hover:border-slate-300"
+                                 )}
+                               >
+                                 <span className="text-base shrink-0 leading-none">{theme.emoji}</span>
+                                 <span className="truncate">{theme.label}</span>
+                               </button>
+                             );
+                           })}
+                         </div>
+                       ) : (
+                         <div className="text-center py-6 text-xs font-semibold text-slate-400">
+                           Aucun thème ne correspond à votre recherche 😕
+                         </div>
+                       )}
                      </div>
                   </div>
                   
