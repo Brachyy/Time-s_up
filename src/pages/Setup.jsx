@@ -275,39 +275,50 @@ const Setup = () => {
           <div className="bg-white p-4 rounded-3xl shadow-sm border-2 border-slate-100 shrink-0">
             <div className="flex flex-col gap-4">
                {/* Mode & Custom Toggle */}
-               <div className="flex gap-4 items-center">
-                  <div className="flex-1">
-                    <label className="block text-sm font-bold mb-2 text-slate-400 uppercase">Mode</label>
-                    <div className="flex gap-2">
-                      {['celebrities', 'words'].map(m => (
-                        <button
-                          key={m}
-                          onClick={() => { setMode(m); updateSettings({ mode: m }); }}
-                          disabled={roomId && !isHost}
-                          className={clsx(
-                            "flex-1 py-2 rounded-lg font-bold transition-all border-2 text-sm",
-                            mode === m 
-                              ? "bg-yellow-100 text-yellow-700 border-yellow-400" 
-                              : "bg-slate-50 text-slate-400 border-slate-100"
-                          )}
-                        >
-                          {m === 'celebrities' ? 'Célébrités' : 'Mots'}
-                        </button>
-                      ))}
-                    </div>
+               <div className="flex flex-col gap-3">
+                  <div>
+                     <label className="block text-sm font-bold mb-2 text-slate-400 uppercase">Thème des Mots</label>
+                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                       {[
+                         { value: 'celebrities', label: 'Célébrités', emoji: '🎭' },
+                         { value: 'words', label: 'Mots Généraux', emoji: '📝' },
+                         { value: 'objects', label: 'Objets', emoji: '🏠' },
+                         { value: 'animals', label: 'Animaux', emoji: '🦁' },
+                         { value: 'movies', label: 'Films & Séries', emoji: '🍿' },
+                         { value: 'jobs', label: 'Métiers', emoji: '🛠️' },
+                         { value: 'sports', label: 'Sports', emoji: '⚽' },
+                         { value: 'mixed', label: 'Mélange', emoji: '🎲' }
+                       ].map(theme => (
+                         <button
+                           key={theme.value}
+                           type="button"
+                           onClick={() => { setMode(theme.value); updateSettings({ mode: theme.value }); }}
+                           disabled={roomId && !isHost}
+                           className={clsx(
+                             "py-2 px-1 rounded-xl font-bold transition-all border-2 text-xs sm:text-sm flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95",
+                             mode === theme.value 
+                               ? "bg-yellow-50 text-yellow-700 border-yellow-400 font-black shadow-inner" 
+                               : "bg-slate-50 text-slate-500 border-slate-100 hover:border-slate-300"
+                           )}
+                         >
+                           <span className="text-lg">{theme.emoji}</span>
+                           <span className="truncate max-w-full">{theme.label}</span>
+                         </button>
+                       ))}
+                     </div>
                   </div>
                   
-                  <div className="flex-1">
-                    <label className="block text-sm font-bold mb-2 text-purple-400 uppercase">Options</label>
-                    <label className="flex items-center gap-2 cursor-pointer bg-purple-50 p-2 rounded-lg border-2 border-purple-100 hover:bg-purple-100 transition-colors">
-                      <input 
-                        type="checkbox"
-                        checked={customOnly}
-                        onChange={(e) => { setCustomOnly(e.target.checked); updateSettings({ customOnly: e.target.checked }); }}
-                        className="w-5 h-5 accent-purple-500"
-                      />
-                      <span className="font-bold text-purple-700 text-sm">Mots Personnalisés Uniquement</span>
-                    </label>
+                  <div>
+                     <label className="flex items-center gap-2 cursor-pointer bg-purple-50 p-2.5 rounded-xl border-2 border-purple-100 hover:bg-purple-100 transition-colors w-full sm:w-auto inline-flex">
+                       <input 
+                         type="checkbox"
+                         checked={customOnly}
+                         onChange={(e) => { setCustomOnly(e.target.checked); updateSettings({ customOnly: e.target.checked }); }}
+                         disabled={roomId && !isHost}
+                         className="w-5 h-5 accent-purple-500"
+                       />
+                       <span className="font-bold text-purple-700 text-sm">Mots Personnalisés Uniquement</span>
+                     </label>
                   </div>
                </div>
 
