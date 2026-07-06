@@ -278,7 +278,7 @@ const Setup = () => {
                <div className="flex flex-col gap-3">
                   <div>
                      <label className="block text-sm font-bold mb-2 text-slate-400 uppercase">Thème des Mots</label>
-                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                        {[
                          { value: 'celebrities', label: 'Célébrités', emoji: '🎭' },
                          { value: 'words', label: 'Mots Généraux', emoji: '📝' },
@@ -287,6 +287,8 @@ const Setup = () => {
                          { value: 'movies', label: 'Films & Séries', emoji: '🍿' },
                          { value: 'jobs', label: 'Métiers', emoji: '🛠️' },
                          { value: 'sports', label: 'Sports', emoji: '⚽' },
+                         { value: 'food', label: 'Nourriture', emoji: '🍕' },
+                         { value: 'actions', label: 'Actions', emoji: '💃' },
                          { value: 'mixed', label: 'Mélange', emoji: '🎲' }
                        ].map(theme => (
                          <button

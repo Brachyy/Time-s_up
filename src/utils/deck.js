@@ -1,26 +1,25 @@
-import CELEBRITIES from '../data/celebrities.json';
 import WORDS from '../data/words.json';
 import THEMES from '../data/themes.json';
 
 export const generateDeck = (mode = 'celebrities', count = 40) => {
   let sourceList = [];
 
-  if (mode === 'celebrities') {
-    sourceList = CELEBRITIES;
-  } else if (mode === 'words') {
+  if (mode === 'words') {
     sourceList = WORDS;
   } else if (THEMES[mode]) {
     sourceList = THEMES[mode];
   } else if (mode === 'mixed') {
-    // Combine all lists, including celebrities, generic words, and theme-specific lists
+    // Combine all available categories for a complete mashup
     sourceList = [
-      ...CELEBRITIES,
       ...WORDS,
+      ...THEMES.celebrities,
       ...THEMES.objects,
       ...THEMES.animals,
       ...THEMES.movies,
       ...THEMES.jobs,
-      ...THEMES.sports
+      ...THEMES.sports,
+      ...THEMES.food,
+      ...THEMES.actions
     ];
   } else {
     sourceList = WORDS; // Fallback
