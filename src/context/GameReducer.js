@@ -35,7 +35,7 @@ export const gameReducer = (state, action) => {
       
       return { 
         ...state, 
-        gameState: 'PLAYING', 
+        gameState: 'PAUSED', 
         deck,
         waitingDeck: [],
         fullDeck: deck,
