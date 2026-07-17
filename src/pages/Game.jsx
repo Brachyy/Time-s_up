@@ -14,6 +14,17 @@ const Game = () => {
   // Filter out guessed cards for the current round
   const availableCards = state.deck.filter(card => !card.guessed);
   const currentCard = availableCards[activeCardIndex];
+
+  const isRoundOver = availableCards.length === 0 && 
+                      (state.waitingDeck || []).length === 0 && 
+                      (state.playedCardsInTurn || []).length === 0;
+
+  // Auto-end the turn when cards run out, unless the round is completely over.
+  useEffect(() => {
+    if (availableCards.length === 0 && state.gameState === 'PLAYING' && !isRoundOver) {
+      dispatch({ type: 'END_TURN' });
+    }
+  }, [availableCards.length, state.gameState, isRoundOver, dispatch]);
   
   const handleCorrect = () => {
     if (availableCards.length > 0) {
@@ -44,7 +55,7 @@ const Game = () => {
     dispatch({ type: 'END_TURN', payload: currentCard });
   }, [dispatch, currentCard]);
 
-  if (availableCards.length === 0) {
+  if (isRoundOver) {
     const allPlayers = [];
     state.teams.forEach((team, tIndex) => {
       team.members.forEach((member, mIndex) => {
@@ -121,6 +132,16 @@ const Game = () => {
             {state.currentRound >= 3 ? 'Terminer la Partie' : 'Manche Suivante'}
           </Button>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (availableCards.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-yellow-50 p-4 text-center">
+        <div className="text-xl font-bold text-slate-800 animate-pulse">
+          Calcul des résultats du tour...
+        </div>
       </div>
     );
   }

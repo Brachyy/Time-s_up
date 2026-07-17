@@ -38,7 +38,7 @@ const AppContent = () => {
             <div className="bg-yellow-50 p-4 rounded-xl border-2 border-yellow-100 mb-8 inline-block w-full">
                <p className="text-sm font-bold text-yellow-700 uppercase mb-1">Dans la pioche</p>
                <p className="text-3xl font-black text-yellow-600">
-                 {state.deck.filter(c => !c.guessed).length} Cartes
+                 {state.deck.filter(c => !c.guessed).length + (state.waitingDeck || []).length} Cartes
                </p>
             </div>
 
